@@ -34,7 +34,7 @@ export default class MotionCommand extends Command {
         return this.council.currentMotion.postMessage()
       } else {
         return msg.reply(
-          "Aucune motion est active. Fait `!motion <texte>` pour créer une."
+          "Aucune motion n'est active. Fait `!motion <texte>` pour créer une."
         )
       }
     }
@@ -44,7 +44,7 @@ export default class MotionCommand extends Command {
         if (
           this.council.currentMotion.authorId === msg.author.id ||
           msg.member.hasPermission("MANAGE_GUILD") ||
-          !!msg.member.roles.cache.find((role) => role.name === "Votum Admin")
+          !!msg.member.roles.cache.find((role) => role.name === "Democratie Admin")
         ) {
           const motion = this.council.currentMotion
           motion.resolve(MotionResolution.Killed)
@@ -60,7 +60,7 @@ export default class MotionCommand extends Command {
     }
 
     if (args.text === "kill") {
-      return msg.reply("Il y a aucune motion actif.")
+      return msg.reply("Il y a aucune motion active.")
     }
 
     if (this.council.getConfig("councilorMotionDisable")) {
@@ -107,7 +107,8 @@ export default class MotionCommand extends Command {
       return msg.reply(
         response(
           ResponseType.Bad,
-          `The given majority type is disallowed by the ~majority.minimum~ configuration point. Please specify a higher majority.`
+          //`The given majority type is disallowed by the ~majority.minimum~ configuration point. Please specify a higher majority.`
+          `Le type de majorité spécifié n'est pas autorisé par le point de configuration ~majority.minimum~ . Veuillez spécifier un majorité plus haute.`
         )
       )
     }

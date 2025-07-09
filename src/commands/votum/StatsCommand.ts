@@ -112,8 +112,8 @@ export default class StatsCommand extends Command {
 
     /////////////////////////////////////////////////////////
 
-    let output = "**__Votum Stats__**\n\n"
-    output += `**Total number of motions called:** ${this.council.numMotions}\n`
+    let output = "**__Démocratie Stats__**\n\n"
+    output += `**Nombre total de motions crées:** ${this.council.numMotions}\n`
 
     ////////////
 
@@ -125,7 +125,7 @@ export default class StatsCommand extends Command {
         highestMotionAuthor = councilorNames[authorId]
       }
     }
-    output += `**Most motions called**: ${highestMotionAuthor} (${highestMotion})`
+    output += `**Le plus de motions crées**: ${highestMotionAuthor} (${highestMotion})`
 
     let highestPassedMotionAuthor = "no one"
     let highestPassedMotion = 0
@@ -135,7 +135,7 @@ export default class StatsCommand extends Command {
         highestPassedMotionAuthor = councilorNames[authorId]
       }
     }
-    output += `\n**Most motions passed**: ${highestPassedMotionAuthor} (${highestPassedMotion})`
+    output += `\n**Le plus de motions approuvées**: ${highestPassedMotionAuthor} (${highestPassedMotion})`
 
     ////////////
 
@@ -150,12 +150,12 @@ export default class StatsCommand extends Command {
 
     voteTimeStats.sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1))
     output +=
-      "\n\n**Time since last vote**" +
+      "\n\n**Temps depuis le dernier vote**" +
       voteTimeStats.reduce(
         (a, stat) =>
           `${a}\n${stat.authorName}: ${timeSince(
             stat.timestamp,
-            "never voted"
+            "jamais voté"
           )}`,
         ""
       )
@@ -173,12 +173,12 @@ export default class StatsCommand extends Command {
 
     motionTimeStats.sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1))
     output +=
-      "\n\n**Time since last motion**" +
+      "\n\n**Temps depuis la dernière motion**" +
       motionTimeStats.reduce(
         (a, stat) =>
           `${a}\n${stat.authorName}: ${timeSince(
             stat.timestamp,
-            "never called a motion"
+            "aucune motion n'a été créée"
           )}`,
         ""
       )

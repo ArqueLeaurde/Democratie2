@@ -8,7 +8,7 @@ export default class YesCommand extends VoteAliasCommand {
     super(client, {
       name: 'yes',
       aliases: ['pour', 'aye', 'si', 'yea', 'yay', 'ja', 'oui', 'da', 'да'],
-      description: 'Votes oui',
+      description: 'Vote oui',
 
       args: [
         {

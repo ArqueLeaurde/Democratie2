@@ -7,9 +7,9 @@ export default class PingInactiveCommand extends Command {
     super(client, {
       name: "pinginactive",
       aliases: [
-	"chomeurs",
-	"flemmards",
-	"absents",
+        "chomeurs",
+        "flemmards",
+        "absents",
         "pingremaining",
         "mentionremaining",
         "alertothers",

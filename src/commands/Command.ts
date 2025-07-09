@@ -53,7 +53,7 @@ export default class Command extends Commando.Command {
 
     const isAdmin =
       msg.member.hasPermission("MANAGE_GUILD") ||
-      !!msg.member.roles.cache.find((role) => role.name === "Votum Admin")
+      !!msg.member.roles.cache.find((role) => role.name === "Democratie Admin")
 
     if (this.adminOnly) {
       return isAdmin
@@ -81,7 +81,7 @@ export default class Command extends Commando.Command {
     args: any,
     fromPattern?: boolean
   ): Promise<Message | Message[] | undefined> {
-    return msg.reply("This command has no implementation.")
+    return msg.reply("Cette commande n'a pas été implémantée.")
   }
 
   public async run(

@@ -5,7 +5,8 @@ import Command from "../Command"
 export default class CouncilCommand extends Command {
   constructor(client: CommandoClient) {
     super(client, {
-      name: "conseil",
+      name: "council",
+      aliases: ["conseil"],
       description:
         "Désigne un salon pour le conseil.",
       councilOnly: false,

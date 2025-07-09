@@ -8,7 +8,7 @@ export default class NoCommand extends VoteAliasCommand {
     super(client, {
       name: 'no',
       aliases: ['contre', 'non', 'nay', 'negative', 'nope', 'nein', 'ne', 'не'],
-      description: 'Votes non',
+      description: 'Vote non',
 
       args: [
         {

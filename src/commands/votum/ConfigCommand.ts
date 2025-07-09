@@ -34,7 +34,7 @@ export default class ConfigCommand extends Command {
     super(client, {
       name: "config",
       aliases: ["votumconfig", "cfg", "vconfig", "vcfg", "councilconfig"],
-      description: "Désignes un rôle spécifique pour le(s) président(s) du conseil.",
+      description: "Désigne un rôle spécifique pour le(s) président(s) du conseil.",
       adminOnly: true,
 
       args: [

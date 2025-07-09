@@ -10,7 +10,7 @@ export default class ArchiveCommand extends Command {
   constructor(client: CommandoClient) {
     super(client, {
       name: "archive",
-      description: "Allows you to view the council archive.",
+      description: "Vous permet de consulter les archives du conseil",
 
       args: [
         {
@@ -27,7 +27,7 @@ export default class ArchiveCommand extends Command {
     let raw = args.range as string
 
     if (raw.trim() === "export") {
-      return msg.reply("Here's your council's data:", {
+      return msg.reply("Voici les données de votre conseil:", {
         files: [
           {
             name: `${this.council.name}-${new Date().toISOString()}.json`,

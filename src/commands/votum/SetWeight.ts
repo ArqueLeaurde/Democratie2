@@ -9,7 +9,7 @@ export default class SetWeightCommand extends Command {
       aliases: ["voteweights"],
       adminOnly: true,
       description:
-        "Set the vote weight of a specific councilor in this council.",
+        "Définit le poids du vote d'un membre spécifique du conseil ou d'un rôle (les poids des différents rôles sont cumulatifs)",
 
       args: [
         {
@@ -33,7 +33,7 @@ export default class SetWeightCommand extends Command {
 
     if (args.target !== "" && typeof args.weight === "number") {
       if (args.weight < 0) {
-        return msg.reply("Weight must not be less than zero")
+        return msg.reply("Le poids du vote ne doit pas être inférieur à 0")
       }
 
       if (args.weight === 1) {
@@ -62,7 +62,7 @@ export default class SetWeightCommand extends Command {
     }
 
     return msg.reply(
-      (args.target ? `Set ${args.target}'s weight to ${args.weight}.\n` : "") +
+      (args.target ? `Le poids du vote de ${args.target} a été défini sur ${args.weight}.\n` : "") +
         `\n${lines.join("\n")}`,
       {
         split: true,

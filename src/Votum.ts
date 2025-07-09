@@ -7,7 +7,8 @@ import Council from "./Council"
 require("dotenv").config()
 
 process.on("unhandledRejection", (reason, promise) => {
-  console.error("Unhandled Rejection at:", reason.stack || reason)
+  console.error("Unhandled Rejection at:", reason instanceof Error ? reason.stack : reason)
+  // console.error("Unhandled Rejection at:", reason.stack || reason) --> Couldn't know if null or undefined
   // Recommended: send the information to sentry.io
   // or whatever crash reporting service you use
 })
@@ -74,7 +75,7 @@ class Votum {
   }
 
   private setActivity(): void {
-    this.bot.user?.setActivity("voter bordel")
+    this.bot.user?.setActivity("Votez bordel !")
   }
 
   private registerCommands(): void {
