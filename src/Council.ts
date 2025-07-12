@@ -103,7 +103,7 @@ export default class Council {
     this.channel.send({
       embed: response(
         ResponseType.Good,
-        "↑ Automatically backed up council data. ↑"
+        "↑ Données du conseil automatiquement sauvegardées. ↑"
       ).embed,
       files: [
         {
@@ -214,7 +214,7 @@ export default class Council {
     const motion = this.data.motions[id]
 
     if (motion == null) {
-      throw new Error(`Motion ID ${id} for council ${this.id} does not exist.`)
+      throw new Error(`La Motion avec l'ID ${id} pour le conseil ${this.id} n'existe pas.`)
     }
 
     return new Motion(id, motion, this)
@@ -251,9 +251,9 @@ export default class Council {
         )
       } catch (e) {
         if (attempt > 10) {
-          console.error(`Council ${this.id} data couldn't be loaded`, e)
+          console.error(`Council ${this.id} : Les données n'ont pas pu être chargées`, e)
           throw new Error(
-            "Council data could not be loaded, perhaps it's corrupted."
+            "Les données du conseil n'ont pas pu être chargées. Elles sont peut-être corrompues."
           )
         }
 
@@ -280,7 +280,7 @@ export default class Council {
 
             break
           } catch (e) {
-            console.error("Could not save council data", e)
+            console.error("Impossible de sauvegarder les données du conseil", e)
           }
         }
       }, 1)

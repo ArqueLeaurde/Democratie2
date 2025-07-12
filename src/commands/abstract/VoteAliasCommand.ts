@@ -1,69 +1,90 @@
 import { Message } from "discord.js"
 import { CommandoMessage } from "discord.js-commando"
-import { CouncilData } from "../../CouncilData"
 import { CastVoteStatus } from "../../Motion"
-import Votum from "../../Votum"
+import { CouncilData } from "../../CouncilData"
 import Command from "../Command"
 
-const reasonRequiredMap: { [index: string]: keyof CouncilData } = {
-  abstain: "reasonRequiredAbstain",
-  yes: "reasonRequiredYes",
-  no: "reasonRequiredNo",
+const EMOJI_BY_STATE: Record<number, string> = {
+  1: "👍",
+  0: "🏳️",
+  [-1]: "👎",
 }
+const ALL_EMOJIS = Object.values(EMOJI_BY_STATE)
 
 export default class VoteAliasCommand extends Command {
-  protected state: 1 | 0 | -1
+  protected state!: 1 | 0 | -1
 
-  async execute(msg: CommandoMessage, args: any): Promise<Message | Message[]> {
+  async execute(
+    msg: CommandoMessage,
+    args: { reason: string }
+  ): Promise<Message | Message[]> {
+    // check for active motion
     if (!this.council.currentMotion) {
-      return msg.reply("There is no motion active.")
+      return msg.reply("Pas de motion en cours.")
     }
 
-    if (
-      !args.reason &&
-      this.council.getConfig(reasonRequiredMap[msg.command.name])
-    ) {
-      return msg.reply("You must provide a reason with your vote.")
+    // get called command
+    const cmdName =
+      msg.command?.name || (msg.command as any)?.memberName
+    if (!cmdName) {
+      return msg.reply("Erreur interne : impossible de déterminer la commande.")
     }
 
+    // check for reason (if command --> yes, if reaction --> no)
+    const reasonKeyMap: Record<string, keyof CouncilData> = {
+      yes: "reasonRequiredYes",
+      no: "reasonRequiredNo",
+      abstain: "reasonRequiredAbstain",
+    }
+    const reasonKey = reasonKeyMap[cmdName]
+    if (!args.reason && this.council.getConfig(reasonKey)) {
+      return msg.reply("Vous devez fournir une raison pour votre vote.")
+    }
     if (args.reason.length > 1000) {
-      return msg.reply(
-        "Your reason is too long. The maximum length is 1000 characters."
-      )
+      return msg.reply("Raison trop longue (max 1000 caractères).")
     }
 
     const motion = this.council.currentMotion
 
+    // load message and update reactions
+    if (!motion.messageId) {
+      return msg.reply("Impossible de retrouver le message de vote.")
+    }
+    const pollMsg = await msg.channel.messages.fetch(motion.messageId)
+
+    // remove old reactions 
+    await Promise.all(
+      ALL_EMOJIS
+        .filter((emoji) => emoji !== EMOJI_BY_STATE[this.state])
+        .map((emoji) =>
+          pollMsg.reactions.cache.get(emoji)?.users.remove(msg.author.id)
+        )
+    )
+    // add corresponding reaction
+    await pollMsg.react(EMOJI_BY_STATE[this.state])
+
+    // cast vote
     const voteStatus = motion.castVote({
       authorId: msg.author.id,
       authorName: msg.member.displayName,
-      name: this.getVoteName(msg),
+      name: `${cmdName} (commande)`,
       state: this.state,
       reason: args.reason,
-      isDictator: this.council.getConfig("dictatorRole")
-        ? msg.member.roles.cache.has(this.council.getConfig("dictatorRole")!)
-        : false,
+      isDictator:
+        !!this.council.getConfig("dictatorRole") &&
+        msg.member.roles.cache.has(this.council.getConfig("dictatorRole")!),
     })
 
+    // user feedback on vote change
     switch (voteStatus) {
       case CastVoteStatus.New:
         return motion.postMessage()
       case CastVoteStatus.Changed:
         return motion.postMessage(
-          `${msg.member} changed their vote to ${this.getVoteName(msg)}.`
+          `${msg.member} a changé son vote en ${cmdName}.`
         )
-      case CastVoteStatus.Failed:
-        return msg.reply("You can't vote on this motion.")
+      default:
+        return msg.reply("Votre vote n'a pas pu être enregistré.")
     }
-  }
-
-  private getVoteName(msg: CommandoMessage) {
-    let name = msg.command.name
-
-    if (msg.cleanContent.substring(0, 1) === Votum.bot.commandPrefix) {
-      name = msg.cleanContent.split(" ")[0].slice(1)
-    }
-
-    return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()
   }
 }

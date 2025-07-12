@@ -197,12 +197,12 @@ const defaultConfigurableData = OptionalDefaultConfigurableCouncilData.decode(
 )
 
 if (defaultConfigurableData.isLeft()) {
-  throw new Error("Invalid default values")
+  throw new Error("Valeurs par défaut invalides")
 }
 
 export const DefaultCouncilData: CouncilData = {
   enabled: false,
-  name: "Council",
+  name: "Deimos",
   userCooldowns: {},
   motions: [],
   lastBackup: 0,

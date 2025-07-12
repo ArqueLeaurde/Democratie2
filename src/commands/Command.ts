@@ -2,7 +2,7 @@ import { Message } from "discord.js"
 import * as Commando from "discord.js-commando"
 import Council from "../Council"
 import { CouncilData } from "../CouncilData"
-import Votum from "../Votum"
+import Democratie from "../Democratie"
 
 interface CustomCommandInfo {
   name: string
@@ -25,7 +25,7 @@ export default class Command extends Commando.Command {
   constructor(client: Commando.CommandoClient, customInfo: CustomCommandInfo) {
     const info = customInfo as Commando.CommandInfo
 
-    info.group = "votum"
+    info.group = "democratie"
     info.guildOnly = true
     info.memberName = info.name
     info.argsPromptLimit = 0
@@ -45,7 +45,7 @@ export default class Command extends Commando.Command {
   }
 
   public hasPermission(msg: Commando.CommandoMessage): boolean {
-    const council = Votum.getCouncil(msg.channel.id)
+    const council = Democratie.getCouncil(msg.channel.id)
 
     if (this.client.isOwner(msg.author)) {
       return true
@@ -90,7 +90,7 @@ export default class Command extends Commando.Command {
     fromPattern?: boolean
   ): Promise<Message | Message[]> {
     try {
-      this.council = Votum.getCouncil(msg.channel.id)
+      this.council = Democratie.getCouncil(msg.channel.id)
 
       await this.council.initialize()
 

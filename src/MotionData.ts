@@ -16,6 +16,7 @@ export interface MotionData {
   votes: MotionVote[]
   deliberationChannelId?: Snowflake
   options?: MotionOptions
+  messageId?: Snowflake
 }
 
 export interface MotionVote {

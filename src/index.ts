@@ -6,7 +6,7 @@ import path from "path"
 require("dotenv").config()
 
 const shardingManager = new Discord.ShardingManager(
-  path.join(__dirname, "Votum.js"),
+  path.join(__dirname, "Democratie.js"),
   {
     token: process.env.TOKEN,
   }

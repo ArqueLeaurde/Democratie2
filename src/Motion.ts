@@ -20,7 +20,7 @@ import {
   MotionVote,
 } from "./MotionData"
 import { forwardMotion } from "./Util"
-import Votum from "./Votum"
+import Democratie from "./Democratie"
 
 export enum LegacyMotionVoteType {
   Majority,
@@ -56,6 +56,11 @@ export default class Motion {
   private weights?: CouncilWeights
   private data: MotionData
   private creatingChannelPromise?: Promise<unknown>
+
+  // save message id to vote with reactions
+  public get messageId(): Snowflake | undefined {
+    return this.data.messageId
+  }
 
   static parseMotionOptions(
     input: string
@@ -143,14 +148,14 @@ export default class Motion {
 
   public getReadableMajority(): string {
     if (this.requiredMajority === 1) {
-      return "Unanimous"
+      return "Unanime"
     }
 
     switch (this.requiredMajority) {
       case 1:
-        return "Unanimous"
+        return "Unanime"
       case 0.5:
-        return "Simple majority"
+        return "Majorité simple"
       default:
         return num2fraction(this.requiredMajority)
     }
@@ -209,8 +214,8 @@ export default class Motion {
       `Conseil : ${this.council.name}`,
       `Date : ${new Date().toISOString()}`,
       `Motion : #${this.number}`,
-      `Resolution : ${MotionResolution[this.resolution]}`,
-      `Proposé par : ${this.authorName}`,
+      `Résolution : ${MotionResolution[this.resolution]}`,
+      `Proposée par : ${this.authorName}`,
       "",
       `Pour : ${votes.yes}`,
       `Contre : ${votes.no}`,
@@ -326,7 +331,7 @@ export default class Motion {
     let author
 
     try {
-      author = await Votum.bot.users.fetch(this.data.authorId)
+      author = await Democratie.bot.users.fetch(this.data.authorId)
     } catch (e) {
       // do nothing
     }
@@ -407,8 +412,12 @@ export default class Motion {
       embeds[currentIndex].fields.push(field)
     }
 
-    return embeds.map((embed) =>
-      (channel || this.council.channel).send(
+    // changed postMessage to include reactions
+    const targetChannel = channel || this.council.channel
+    const sentMessages: Message[] = []
+
+    for (const embed of embeds) {
+      const sent = await targetChannel.send(
         typeof text !== "undefined"
           ? text === true
             ? this.council.mentionString
@@ -416,7 +425,28 @@ export default class Motion {
           : "",
         { embed }
       )
-    )[0]
+      // On ne peut pas garantir que `send` retourne un `Message` si le channel est un `NewsChannel`,
+      // donc on le traite comme un tableau.
+      const messages = Array.isArray(sent) ? sent : [sent];
+      sentMessages.push(...messages);
+    }
+    
+    const mainMessage = sentMessages[0]
+
+    // if the motion is active, register ID and add reaction votes
+    if (this.data.active && mainMessage) {
+      this.data.messageId = mainMessage.id
+
+      try {
+        await mainMessage.react('👍')
+        await mainMessage.react('👎')
+        await mainMessage.react('🏳️')
+      } catch (error) {
+        console.error("Échec de l'ajout des réactions :", error)
+      }
+    }
+
+    return sentMessages.length === 1 ? mainMessage : sentMessages
   }
 
   public castVote(newVote: MotionVote): CastVoteStatus {
@@ -437,6 +467,18 @@ export default class Motion {
 
     this.checkVotes()
     return CastVoteStatus.New
+  }
+
+  // new method to remove votes
+  public retractVote(authorId: Snowflake): void {
+    const voteIndex = this.data.votes.findIndex(
+      (vote) => vote.authorId === authorId
+    )
+
+    if (voteIndex > -1) {
+      this.data.votes.splice(voteIndex, 1)
+      this.postMessage(`Le vote de <@${authorId}> a été retiré.`)
+    }
   }
 
   private getTotal(): number {
@@ -607,12 +649,12 @@ export default class Motion {
 
     if (this.data.active === false) {
       return (
-        `Results final.` +
+        `Résultats finaux.` +
         (this.data.voteType === LegacyMotionVoteType.Unanimous
           ? " (Vote unanime est nécessaire)"
           : "") +
         (this.data.didExpire ? " (Motion expirée.)" : "") +
-        (votes.dictatorVoted ? " (Dictateur a terminé immédiatement le vote)" : "")
+        (votes.dictatorVoted ? " (Un Dictateur a terminé immédiatement le vote)" : "")
       )
     }
 

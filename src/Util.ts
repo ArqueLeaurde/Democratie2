@@ -7,7 +7,7 @@ import {
 import { Either } from "fp-ts/lib/Either"
 import * as t from "io-ts"
 import Motion, { MotionResolution } from "./Motion"
-import Votum from "./Votum"
+import Democratie from "./Democratie"
 
 export type ExtractRight<T> = T extends Either<infer L, infer R> ? R : never
 
@@ -125,7 +125,7 @@ export async function forwardMotion(
   targetCouncilId: string,
   optionsString?: string
 ) {
-  const targetCouncil = Votum.getCouncil(targetCouncilId)
+  const targetCouncil = Democratie.getCouncil(targetCouncilId)
 
   if (!targetCouncil.enabled) {
     return
