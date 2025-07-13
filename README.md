@@ -7,6 +7,7 @@
 # Démocratie3
 
 Un bot Discord pour la gestion démocratique de motions et votes dans un salon dédié, adapté aux conseils restreints ou aux groupes souhaitant délibérer efficacement.
+Basé sur les travaux de evaera/Votum.
 
 ## Fonctionnalités principales
 - Création et gestion de conseils et de motions
@@ -17,7 +18,7 @@ Un bot Discord pour la gestion démocratique de motions et votes dans un salon d
 ## Commandes
 
 ### Commandes admin
-These commands can only be run by someone with the `Manage Server` permission, or with a role named `Votum Admin`.
+Ces commandes peuvent seulement être utilisées par un Admin, ou par les personnes avec un rôle `Democratie Admin`.
 
 | Command         | Description |
 | -------------   | ----------- |
