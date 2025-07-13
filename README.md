@@ -136,10 +136,4 @@ Le JSON fourni doit être un objet qui à à des identifiants clés sous forme d
 }
 ```
 
-To learn how to get the user and role IDs, check out [cet article d'aide](https://support.discordapp.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-).
-
-<style>
-h1:not([id]) {
-  display: none;
-  }
-</style>
+Pour savoir comment obtenir les identifiants de rôles/utilisateurs, vous pouvez consulter [cet article d'aide](https://support.discordapp.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-).
