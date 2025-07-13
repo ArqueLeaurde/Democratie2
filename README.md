@@ -1,7 +1,7 @@
 <p align="center">
   <a href="#"><img src="https://i.imgur.com/uF02JFi.png" alt="Demoscratos" /></a>
   <br>
-  <a href="https://github.com/OGEC-Union-Lassalienne/Democratie2">View Source on GitHub</a>
+  <a href="https://github.com/OGEC-Union-Lassalienne/Democratie2">Voir la source sur GitHub</a>
   <br><br>
 
 # Démocratie3
@@ -64,8 +64,8 @@ These commands can only be run by someone with the `Manage Server` permission, o
 | `!motion <motion text>` | Créé une motion avec l'argument saisi ensuite.
 | `!motion [options] <motion text>` | Créé une motion avec certaines options. Voir [Options des Motions](#options-des-motions)
 | `!motion kill` | Abandonne la motion en cours. (ADMINS SEULEMENT).
-| `!yes | aye | si | yea | yay | ja | oui <reason>` | Vote "oui" pour la motion en cours.
-| `!no | nay | negative | nope | nein <reason>` | Vote "non" pour la motion en cours.
+| `!yes <reason>` | Vote "oui" pour la motion en cours.
+| `!no <reason>` | Vote "non" pour la motion en cours.
 | `!abstain [reason]` | Vote blanc pour la motion en cours.
 | `!lazyvoters` | Mentionne tous les membres du conseil qui n'ont pas encore voté.
 | `!archive [range]` | Permet de voir les motions passées. Spécifiez une plage de nombres pour voir un résumé, ou un seul nombre pour voir la motion en question.
