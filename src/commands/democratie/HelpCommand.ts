@@ -2,6 +2,25 @@ import { MessageEmbed } from 'discord.js';
 import { CommandoClient, CommandoMessage } from 'discord.js-commando';
 import Command from '../Command';
 
+const SYNTAXES: Record<string, string> = {
+  elections: "!elections [raison] [durée candidature en minutes] [durée vote en minutes]",
+  candidat: "!candidat [raison]",
+  motion: "!motion [options] [description]",
+  yes: "!yes [raison]",
+  no: "!no [raison]",
+  abstain: "!abstain [raison]",
+  pinginactive: "!pinginactive",
+  archive:"!archive [plage]/ !archive export",
+  config:"!config [point de configuration] [valeur]/$remove",
+  counclistats:"!councilstats",
+  council:"!council [nom] / !council remove",
+  setweight:"!setweight [@membre/@rôle] [poids du vote]",
+  help:"!help / !help [commande]"
+
+  // add your commands here
+}
+
+
 export default class HelpCommand extends Command {
   constructor(client : CommandoClient) {
     super(client, {
@@ -48,6 +67,12 @@ export default class HelpCommand extends Command {
       }
       if (command.adminOnly) {
         embed.addField('Permission', 'Réservée aux administrateurs');
+      }
+
+    // displays the command's syntax
+      const syntax = SYNTAXES[command.name]
+      if (syntax) {
+        embed.addField("Syntaxe", `\`${syntax}\``)
       }
 
       return msg.embed(embed);

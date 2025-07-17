@@ -9,7 +9,7 @@ export default class SetWeightCommand extends Command {
       aliases: ["voteweights"],
       adminOnly: true,
       description:
-        "Définit le poids du vote d'un membre spécifique du conseil ou d'un rôle (les poids des différents rôles sont cumulatifs).",
+        "Définit le poids du vote d'un membre spécifique du conseil ou d'un rôle (les poids des différents rôles sont cumulatifs). `!voteweights` affiche les poids des actuels",
 
       args: [
         {
