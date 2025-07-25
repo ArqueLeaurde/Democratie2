@@ -6,15 +6,30 @@
 
 # Démocratie3
 
-Un bot Discord pour la gestion démocratique de motions et votes dans un salon dédié, adapté aux conseils restreints ou aux groupes souhaitant délibérer efficacement.
+Un bot Discord pour la gestion démocratique de motions, élections et votes dans un salon dédié, adapté aux conseils restreints ou aux groupes souhaitant délibérer efficacement.
 Basé sur les travaux de evaera/Votum.
 
-## Fonctionnalités principales
+## Fonctionnalités
+
+### Fonctionnalités principales héritées de Democratie2
 - Création et gestion de conseils et de motions
-- Système de vote par commandes/réactions pondéré par rôles/utilisateurs
+- Système de vote par commandes pondéré par rôles/utilisateurs
 - Archivage et export des motions en JSON
 - Configuration flexible des conseils et motions
-  
+
+### Fonctionnalités ajoutées dans Démocratie3
+- Ajout du support des votes par réactions pour une meilleure UX/UI (Ajout, retrait et changement de vote supportés. Les réactions ne se cumulent pas aux commandes `!yes`, `!no` et `!abstain` qui sont toujours fonctionnelles et interchangeables)
+- Création d'élections en 3 temps :
+  1. Annonce et phase de candidature
+  2. Résultats des candidatures et phase de Vote
+  3. Résultats finaux
+- Suppression de la file d'attente pour les motions et ajout d'un support de plusieurs motions et élections en simultané avec gestion simple d'ID unique pour chaque élection/motion
+- Ajout d'un `!motion kill [id]` et d'un `!election kill [id]` pour stopper une motion ou une élection en cours
+- Ajout d'un `!motion status [id]` et d'un `!election status [id]` pour voir le statut d'une motion ou d'une élection en cours (phase, sujet etc...)
+- Ajout d'une commande `!candidat <reason> [id]` pour se porter candidat à une élection en cours
+
+
+
 ## Commandes
 
 ### Commandes admin
@@ -71,6 +86,12 @@ Ces commandes peuvent seulement être utilisées par un Admin, ou par les person
 | `!lazyvoters` | Mentionne tous les membres du conseil qui n'ont pas encore voté.
 | `!archive [range]` | Permet de voir les motions passées. Spécifiez une plage de nombres pour voir un résumé, ou un seul nombre pour voir la motion en question.
 | `!archive export` | Exporte les données du conseil au format d'un fichier JSON.
+| `!help` | Affiche la liste des commandes disponibles.
+| `!help <command>` | Affiche la description et la syntaxe d'une commande spécifique.
+| `!election` | Voir l'élection en cours.
+| `!election <reason> <cand_dur> <vote_dur>` | Créé une élection avec la raison donnée, la durée de la phase de candidature en minutes et la durée de la phase de vote en minutes (Ex : `!election "Délégué de classe" 10 20` pour une élection de délégué de classe avec 10 minutes de candidature et 20 minutes de vote avant les résultats finaux).
+| `!candidat <reason>` | Se porte candidat pour l'élection en cours.
+
 
 #### Options des Motions
 

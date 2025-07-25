@@ -1,37 +1,39 @@
-import Discord from "discord.js"
-import { TextChannel, Message } from "discord.js"
+import Discord, { TextChannel, Message, MessageEmbed } from "discord.js"
 import { CommandoClient, CommandoMessage } from "discord.js-commando"
 import Command from "../Command"
 import Election from "../../Election"
 import { ElectionData } from "../../ElectionData"
+import Democratie from "../../Democratie"
 
 type Args = {
-  reason: string
-  candDur: number
+  subcommandOrReason: string
+  candDurOrId: number
   voteDur: number
 }
+
+let electionCounter = 0;
 
 export default class ElectionsCommand extends Command {
   constructor(client: CommandoClient) {
     super(client, {
-      name: "elections",
-      description: "Lance une élection ou affiche l’état actuel",
+      name: "election",
+      description: "Gère les élections.",
       args: [
         {
-          key: "reason",
-          prompt: "Quel est le motif de l’élection ?",
+          key: "subcommandOrReason",
+          prompt: "Le motif de l’élection, ou une sous-commande (list, status, kill).",
           type: "string",
           default: ""
         },
         {
-          key: "candDur",
-          prompt: "Durée phase de candidature (minutes) ?",
+          key: "candDurOrId",
+          prompt: "Durée de la phase de candidature (en minutes) ou ID de l'élection.",
           type: "integer",
           default: 0
         },
         {
           key: "voteDur",
-          prompt: "Durée phase de vote (minutes) ?",
+          prompt: "Durée de la phase de vote (en minutes).",
           type: "integer",
           default: 0
         }
@@ -44,148 +46,137 @@ export default class ElectionsCommand extends Command {
     msg: CommandoMessage,
     args: Args
   ): Promise<Message | Message[]> {
-    // get active election
-    const democratie = (this.client as any).democratie as {
-      currentElection?: Election
-    }
-    const active = democratie.currentElection
+    const democratie = (this.client as any).democratie as typeof Democratie
+    const { subcommandOrReason, candDurOrId, voteDur } = args;
 
-    // !elections kill
-    if (args.reason.toLowerCase() === "kill") {
-      if (!active || active.data.phase === "Finished") {
-        return msg.reply("⚠️ Aucune élection active à interrompre.")
-      }
-      active.data.phase = "Finished"
-      democratie.currentElection = undefined
-      return msg.say("🛑 Élection annulée manuellement.")
-    }
-
-    // !elections without args
-    const noArgs =
-      args.reason.trim() === "" &&
-      args.candDur === 0 &&
-      args.voteDur === 0
-
-    if (noArgs) {
-      if (!active) {
-        return msg.reply("ℹ️ Il n’y a actuellement **aucune** élection en cours.")
-      }
-      // stats display
-      const embed = new Discord.MessageEmbed()
-        .setColor("ORANGE")
-        .setTitle("📊 État actuel des élections")
-        .setDescription(`**Objet :** ${active.data.reason}`)
-
-      if (active.data.phase === "Candidacy") {
-        embed.setFooter(
-          `Fin des candidatures <t:${Math.floor(
-            active.data.endsCandidacyAt / 1000
-          )}:R>`
-        )
-        embed.addField(
-          "Candidats",
-          active.data.candidates.length > 0
-            ? active.data.candidates.map((c) => `• ${c.name}`).join("\n")
-            : "Aucun candidat pour le moment",
-          false
-        )
-      } else if (active.data.phase === "Voting") {
-        embed.setFooter(
-          `Fin du vote <t:${Math.floor(
-            active.data.endsVotingAt! / 1000
-          )}:R>`
-        )
-        active.data.candidates.forEach((c, i) => {
-          const votesFor = active.data.votes.filter(
-            (v) => v.candidateId === c.id
-          ).length
+    if (subcommandOrReason.toLowerCase() === "list") {
+        const activeElections = Array.from(democratie.elections.values()).filter(
+            e => e.data.phase !== 'Finished'
+        );
+        
+        if (activeElections.length === 0) {
+          return msg.reply("ℹ️ Il n'y a actuellement aucune élection en cours.");
+        }
+        
+        const embed = new MessageEmbed()
+          .setTitle("🗳️ Élections en cours")
+          .setColor("ORANGE");
+        
+        activeElections.forEach(e => {
+          const id = e.data.id.split('-')[1];
+          const channelName = msg.guild?.channels.cache.get(e.data.channelId)?.name || 'salon inconnu';
           embed.addField(
-            `${active.emojis[i]} ${c.name}`,
-            `${votesFor} vote(s)`,
-            true
-          )
-        })
-      } else {
-        embed.setFooter("Élection terminée")
-        const resultLines = active.data.candidates
-          .map((c) => {
-            const count = active.data.votes.filter(
-              (v) => v.candidateId === c.id
-            ).length
-            return `• ${c.name} : ${count} vote(s)`
-          })
-          .join("\n")
-        embed.addField("Résultats", resultLines || "Aucun vote enregistré.")
-      }
-
-      return msg.embed(embed)
+            `**ID: ${id}** - ${e.data.reason}`, 
+            `Phase: ${e.data.phase} | Salon: #${channelName}`, 
+            false
+          );
+        });
+        
+        return msg.embed(embed);
+    }
+    
+    if (subcommandOrReason.toLowerCase() === "kill") {
+        if (candDurOrId <= 0) return msg.reply("Veuillez fournir l'ID de l'élection : `!election kill <id>`");
+        
+        const election = democratie.elections.get(`election-${candDurOrId}`);
+        if (!election) {
+            return msg.reply(`⚠️ L'élection avec l'ID ${candDurOrId} n'a pas été trouvée.`);
+        }
+        
+        election.data.phase = 'Finished';
+        democratie.elections.delete(`election-${candDurOrId}`);
+        
+        return msg.reply(`✅ L'élection **ID ${candDurOrId}** a été annulée.`);
     }
 
-    // incorrect settings
-    if (
-      args.reason.trim() === "" ||
-      args.candDur <= 0 ||
-      args.voteDur <= 0
-    ) {
-      return msg.reply(
-        "❌ Usage incorrect. Exemple : `!elections \"Délégué de classe\" 10 20`"
-      )
-    }
+    if (subcommandOrReason.toLowerCase() === "status") {
+        if (candDurOrId <= 0) return msg.reply("Veuillez fournir l'ID de l'élection : `!election status <id>`");
+        const election = democratie.elections.get(`election-${candDurOrId}`);
+        if (!election) {
+            return msg.reply(`⚠️ L'élection avec l'ID ${candDurOrId} n'a pas été trouvée.`);
+        }
 
-    // can't launch election if one is already ative
-    if (active && active.data.phase !== "Finished") {
-      return msg.reply(
-        "⚠️ Une élection est déjà en cours. Tapez `!elections kill` pour l’interrompre."
-      )
-    }
+        const embed = new Discord.MessageEmbed()
+            .setColor("ORANGE")
+            .setTitle(`📊 État de l'élection #${candDurOrId}`)
+            .setDescription(`**Objet :** ${election.data.reason}`)
 
-    // create new election
-    const msCand = args.candDur * 60_000
-    const msVote = args.voteDur * 60_000
-    const endsCandidacyAt = Date.now() + msCand
+        if (election.data.phase === "Candidacy") {
+            embed.setFooter(`Fin des candidatures <t:${Math.floor(election.data.endsCandidacyAt / 1000)}:R>`);
+            embed.addField(
+                "Candidats",
+                election.data.candidates.length > 0 ? election.data.candidates.map((c) => `• ${c.name}`).join("\n") : "Aucun candidat pour le moment",
+                false
+            );
+        } else if (election.data.phase === "Voting") {
+            embed.setFooter(`Fin du vote <t:${Math.floor(election.data.endsVotingAt! / 1000)}:R>`);
+            election.data.candidates.forEach((c, i) => {
+                const votesFor = election.data.votes.filter(v => v.candidateId === c.id).length;
+                embed.addField(`${election.emojis[i]} ${c.name}`, `${votesFor} vote(s)`, true);
+            });
+        } else {
+            embed.setFooter("Élection terminée");
+        }
+        return msg.embed(embed);
+    }
+    
+    const reason = subcommandOrReason;
+    const candDur = candDurOrId;
+    if (reason.trim() === "" || candDur <= 0 || voteDur <= 0) {
+      return msg.reply("❌ Usage incorrect. Exemple : `!election \"Délégué de classe\" 10 20`");
+    }
+    
+    electionCounter++;
+    const newElectionId = `election-${electionCounter}`;
+
+    const msCand = candDur * 60_000;
+    const msVote = voteDur * 60_000;
+    const endsCandidacyAt = Date.now() + msCand;
 
     const data: ElectionData = {
-      reason: args.reason,
+      id: newElectionId,
+      reason: reason,
       phase: "Candidacy",
       endsCandidacyAt,
       candidates: [],
-      votes: []
-    }
+      votes: [],
+      channelId: msg.channel.id
+    };
 
-    const newElection = new Election(data, msg.channel as TextChannel)
-    democratie.currentElection = newElection
+    const newElection = new Election(data, msg.channel as TextChannel);
+    democratie.elections.set(newElectionId, newElection);
 
-    // creation message
     await msg.say(
-      `📢 Élections ouvertes : **${args.reason}**\n` +
-        `Candidatures jusqu’à <t:${Math.floor(
-          endsCandidacyAt / 1000
-        )}:R>`
-    )
-    await newElection.startCandidacy(msCand)
+      `📢 Élection **ID ${electionCounter}** ouverte : **${reason}**\n` +
+      `Les candidatures sont ouvertes jusqu'à <t:${Math.floor(endsCandidacyAt / 1000)}:R>. Utilisez \`!candidat "raison" ${electionCounter}\`.`
+    );
+    
+    (async () => {
+        await newElection.startCandidacy(msCand);
 
-    // time left for candidates to apply
-    setTimeout(async () => {
-      // no candidates = end elections immediatly
-      if (newElection.data.candidates.length === 0) {
-        await msg.say(
-          "⚠️ Aucune candidature reçue. Résultats immédiats."
-        )
-        await newElection.announceResults()
-        democratie.currentElection = undefined
-        return
-      }
+        setTimeout(async () => {
+            if (newElection.data.phase !== 'Candidacy') return;
 
-      // else vote phase starts
-      await newElection.startVoting(msVote)
+            if (newElection.data.candidates.length === 0) {
+                await msg.say(`⚠️ L'élection **ID ${electionCounter}** n'a reçu aucune candidature. Résultats immédiats.`);
+                await newElection.announceResults();
+                democratie.elections.delete(newElectionId);
+                return;
+            }
 
-      // time left to vote
-      setTimeout(() => {
-        newElection.announceResults().catch(console.error)
-        democratie.currentElection = undefined
-      }, msVote)
-    }, msCand)
+            await newElection.startVoting(msVote);
 
-    return msg.reply("🗳️ Phase de candidature lancée.")
+            setTimeout(() => {
+                if (newElection.data.phase !== 'Voting') return;
+
+                newElection.announceResults().catch(console.error);
+                democratie.elections.delete(newElectionId);
+            }, msVote);
+        }, msCand);
+    })();
+
+    return [];
   }
 }
+
+

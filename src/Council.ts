@@ -133,13 +133,28 @@ export default class Council {
 
     return role ? role.members : this.channel.members
   }
-
-  public get currentMotion(): Motion | undefined {
-    for (const [index, motion] of this.data.motions.entries()) {
-      if (motion.active) {
-        return new Motion(index, motion, this)
+  
+  public getActiveMotions(): Motion[] {
+    const activeMotions: Motion[] = []
+    this.data.motions.forEach((motionData, index) => {
+      if (motionData.active) {
+        activeMotions.push(new Motion(index, motionData, this))
       }
+    })
+    return activeMotions
+  }
+
+  // Trouve une motion par son numéro
+  public findMotionByNumber(motionNumber: number): Motion | undefined {
+    if (motionNumber <= 0 || motionNumber > this.data.motions.length) {
+      return undefined
     }
+    const motionIndex = motionNumber - 1;
+    const motionData = this.data.motions[motionIndex];
+    if (motionData) {
+      return new Motion(motionIndex, motionData, this)
+    }
+    return undefined;
   }
 
   public get numMotions(): number {
@@ -152,7 +167,6 @@ export default class Council {
       | undefined
   }
 
-  // TODO: Return object like {users: { id => weight}, total: number} and cache inside Motion
   public async calculateWeights(): Promise<CouncilWeights> {
     const weights = this.getVoteWeights()
 

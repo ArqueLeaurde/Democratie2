@@ -382,7 +382,7 @@ export default class Motion {
         thumbnail: {
           url: `http://assets.imgix.net/~text?txt=${encodeURIComponent(
             this.getReadableMajority()
-          )}&txtclr=3498db&txtsize=20&h=50&txtfont=Georgia`,
+          )}&txtclr=3498db&txtsize=30&h=60&txtfont=Chalkduster`,
         },
       },
     ]
@@ -425,8 +425,7 @@ export default class Motion {
           : "",
         { embed }
       )
-      // On ne peut pas garantir que `send` retourne un `Message` si le channel est un `NewsChannel`,
-      // donc on le traite comme un tableau.
+
       const messages = Array.isArray(sent) ? sent : [sent];
       sentMessages.push(...messages);
     }
@@ -558,8 +557,8 @@ export default class Motion {
       )
     }
 
-    const newCurrentMotion = this.council.currentMotion
-    if (newCurrentMotion) {
+    const newCurrentMotion = this.council.getActiveMotions()[0] // get the next otion
+    if (newCurrentMotion) { 
       newCurrentMotion.createdAt = Date.now()
       setTimeout(
         () =>

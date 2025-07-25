@@ -22,13 +22,13 @@ export default class PingInactiveCommand extends Command {
   }
 
   async execute(msg: CommandoMessage, args: any): Promise<Message | Message[]> {
-    if (this.council.currentMotion == null) {
+    if (this.council.getActiveMotions() == null) {
       return msg.reply("Il y a actuellement aucune motion active.")
     }
 
     return msg.reply(
       "Ces membres du conseil doivent voter :\n\n" +
-        this.council.currentMotion.getRemainingVoters().array().join(" ")
+        this.council.getActiveMotions()[0].getRemainingVoters().array().join(" ")
     )
   }
 }

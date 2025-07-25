@@ -8,7 +8,8 @@
     "io-ts": "^1.8.2",
     "minimist": "^1.2.6",
     "num2fraction": "^1.2.2",
-    "on-change": "^0.1.0"
+    "on-change": "^0.1.0",
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "@types/babel__traverse": "^7.14.2",
@@ -16,6 +17,7 @@
     "@types/minimist": "^1.2.0",
     "@types/node": "^10.12.30",
     "@types/on-change": "^1.1.0",
+    "@types/uuid": "^8.3.4",
     "@types/ws": "^7.2.3",
     "jest": "^27.1.0",
     "ts-node": "^10.9.2",

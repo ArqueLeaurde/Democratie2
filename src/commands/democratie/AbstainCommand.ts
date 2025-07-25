@@ -16,6 +16,12 @@ export default class AbstainCommand extends VoteAliasCommand {
           prompt: 'Raison pour ce vote',
           type: 'string',
           default: ''
+        },
+        {
+          key: 'motionId',
+          prompt: "ID de la motion (optionnel)",
+          type: 'integer',
+          default: 0
         }
       ]
     })

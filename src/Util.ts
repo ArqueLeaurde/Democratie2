@@ -157,7 +157,7 @@ export async function forwardMotion(
   motionData.didExpire = false
   motionData.createdAt = Date.now()
 
-  const existingMotion = targetCouncil.currentMotion
+  const existingMotion = targetCouncil.getActiveMotions
   const newMotion = targetCouncil.createMotion(motionData)
 
   if (!existingMotion) {

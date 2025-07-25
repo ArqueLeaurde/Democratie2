@@ -1,4 +1,4 @@
-import { Message } from "discord.js"
+import { Message, MessageEmbed } from "discord.js"
 import { CommandoClient, CommandoMessage } from "discord.js-commando"
 import { PathReporter } from "io-ts/lib/PathReporter"
 import Motion, { LegacyMotionVoteType, MotionResolution } from "../../Motion"
@@ -10,58 +10,101 @@ export default class MotionCommand extends Command {
     super(client, {
       name: "motion",
       aliases: ["propose", "proposal", "call"],
-      description: "Créer une motion",
+      description: "Gère les motions.",
 
       allowWithConfigurableRoles: ["proposeRole"],
       adminsAlwaysAllowed: true,
 
       args: [
         {
-          key: "text",
-          prompt: "Le texte du motion à proposer.",
+          key: "subcommandOrText",
+          prompt: "Le texte de la motion, ou une sous-commande (list, status, kill).",
           type: "string",
           default: "",
         },
+        {
+            key: "id",
+            prompt: "L'ID de la motion (pour status/kill).",
+            type: "integer",
+            default: 0, // 0 indique qu'aucun ID n'a été fourni
+        }
       ],
     })
   }
 
-  async execute(msg: CommandoMessage, args: any): Promise<Message | Message[]> {
+  async execute(msg: CommandoMessage, args: { subcommandOrText: string, id: number }): Promise<Message | Message[]> {
     await msg.guild.members.fetch() // Privileged intents fix
 
-    if (!args.text) {
-      if (this.council.currentMotion) {
-        return this.council.currentMotion.postMessage()
-      } else {
-        return msg.reply(
-          "Aucune motion n'est active. Fait `!motion <texte>` pour créer une."
-        )
-      }
-    }
+    const { subcommandOrText, id } = args
 
-    if (this.council.currentMotion) {
-      if (args.text === "kill") {
-        if (
-          this.council.currentMotion.authorId === msg.author.id ||
-          msg.member.hasPermission("MANAGE_GUILD") ||
-          !!msg.member.roles.cache.find((role) => role.name === "Democratie Admin")
-        ) {
-          const motion = this.council.currentMotion
-          motion.resolve(MotionResolution.Killed)
-          return motion.postMessage()
-        } else {
-          return msg.reply("Tu as pas la permission de tuer cette motion.")
+    // gestion !motion list
+    if (subcommandOrText.toLowerCase() === 'list') {
+        const activeMotions = this.council.getActiveMotions()
+        if (activeMotions.length === 0) {
+            return msg.reply("Aucune motion n'est actuellement active.")
         }
-      }
-
-      if (!this.council.getConfig("motionQueue")) {
-        return msg.reply("Il y a déjà actuellement une motion active.")
-      }
+        const embed = new MessageEmbed()
+            .setTitle("📋 Motions Actives")
+            .setColor("BLUE")
+            .setDescription(activeMotions.map(m => `**#${m.number}**: ${m.text.substring(0, 100)}...`).join('\n\n'))
+        return msg.embed(embed)
     }
 
-    if (args.text === "kill") {
-      return msg.reply("Il y a aucune motion active.")
+    // gestion !motion status [id]
+    if (subcommandOrText.toLowerCase() === 'status') {
+        let motionToDisplay: Motion | undefined;
+        if (id > 0) {
+            motionToDisplay = this.council.findMotionByNumber(id);
+        } else {
+            const activeMotions = this.council.getActiveMotions();
+            if (activeMotions.length === 1) {
+                motionToDisplay = activeMotions[0];
+            } else if (activeMotions.length > 1) {
+                return msg.reply("Plusieurs motions sont actives. Veuillez spécifier un ID : `!motion status <id>`");
+            }
+        }
+
+        if (!motionToDisplay) {
+            return msg.reply(id > 0 ? `La motion #${id} est introuvable.` : `Aucune motion active.`);
+        }
+        return motionToDisplay.postMessage();
     }
+
+    // gestion !motion kill [id]
+    if (subcommandOrText.toLowerCase() === 'kill') {
+        let motionToKill: Motion | undefined;
+        if (id > 0) {
+            motionToKill = this.council.findMotionByNumber(id);
+        } else {
+            const activeMotions = this.council.getActiveMotions();
+            if (activeMotions.length === 1) {
+                motionToKill = activeMotions[0];
+            } else if (activeMotions.length > 1) {
+                return msg.reply("Plusieurs motions sont actives. Veuillez spécifier un ID : `!motion kill <id>`");
+            }
+        }
+        
+        if (!motionToKill) {
+            return msg.reply(id > 0 ? `La motion #${id} est introuvable.` : `Aucune motion active à annuler.`);
+        }
+
+        if (motionToKill.authorId === msg.author.id || msg.member.hasPermission("MANAGE_GUILD")) {
+            motionToKill.resolve(MotionResolution.Killed)
+            await motionToKill.postMessage()
+            return msg.say(`La motion #${motionToKill.number} a été annulée.`)
+        } else {
+            return msg.reply("Vous n'avez pas la permission d'annuler cette motion.")
+        }
+    }
+
+    // gestion !motion <texte>
+    const fullText = subcommandOrText.trim();
+    
+    if (fullText.length === 0) {
+        return msg.reply("Syntaxe incorrecte. Pour créer une motion, tapez `!motion <texte de la proposition>`.");
+    }
+
+    // Logique de file d'attente retirée car plusieurs motion peuvent être gérées maintenant
 
     if (this.council.getConfig("councilorMotionDisable")) {
       return msg.reply("La création de motions est désactivée dans ce conseil.")
@@ -72,7 +115,7 @@ export default class MotionCommand extends Command {
       return msg.reply("Tu as pas les permissions de proposer une motion.")
     }
 
-    if (args.text.length > 2000) {
+    if (fullText.length > 2000) {
       return msg.reply(
         "Ta motion est trop longue. La taille limite est de 2000 caractères."
       )
@@ -88,9 +131,7 @@ export default class MotionCommand extends Command {
       )
     }
 
-    let voteType = LegacyMotionVoteType.Majority
-
-    const result = Motion.parseMotionOptions(args.text)
+    const result = Motion.parseMotionOptions(fullText)
 
     if (result.isLeft()) {
       return msg.reply(
@@ -107,24 +148,22 @@ export default class MotionCommand extends Command {
       return msg.reply(
         response(
           ResponseType.Bad,
-          //`The given majority type is disallowed by the ~majority.minimum~ configuration point. Please specify a higher majority.`
           `Le type de majorité spécifié n'est pas autorisé par le point de configuration ~majority.minimum~ . Veuillez spécifier un majorité plus haute.`
         )
       )
     }
 
-    const motionAlreadyExists = this.council.currentMotion
-
     if (this.council.getConfig("userCooldownKill")) {
       this.council.setUserCooldown(msg.author.id, Date.now())
     }
 
+    // Création de la motion
     const motion = this.council.createMotion({
       text,
       authorId: msg.author.id,
       authorName: msg.member.displayName,
       createdAt: Date.now(),
-      voteType,
+      voteType: LegacyMotionVoteType.Majority, // voteType est conservé pour la rétrocompatibilité potentielle avec commandes mais géré par les options
       active: true,
       resolution: MotionResolution.Unresolved,
       didExpire: false,
@@ -132,15 +171,7 @@ export default class MotionCommand extends Command {
       options,
     })
 
-    if (motionAlreadyExists) {
-      return msg.reply(
-        response(
-          ResponseType.Good,
-          "Ta motion est en attente et sera proposée après la motion actuelle."
-        )
-      )
-    }
-
+    await msg.reply(`✅ Motion **#${motion.number}** créée avec succès !`)
     return motion.postMessage(true)
   }
 }

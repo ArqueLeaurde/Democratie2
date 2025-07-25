@@ -1,5 +1,5 @@
 import * as Discord from "discord.js"
-import { Intents } from "discord.js"
+import { Intents} from "discord.js"
 import * as Commando from "discord.js-commando"
 import * as path from "path"
 import Command from "./commands/Command"
@@ -27,7 +27,7 @@ const REACTION_VOTE_MAP: {
 class Democratie {
   public bot: Commando.CommandoClient
   private councilMap: Map<Discord.Snowflake, Council>
-  public currentElection?: Election
+  public elections: Map<string, Election>
 
   constructor() {
     this.bot = new Commando.CommandoClient({
@@ -44,7 +44,9 @@ class Democratie {
       commandEditableDuration: 120,
     })
 
+    // maps pour le conseil et les élections
     this.councilMap = new Map()
+    this.elections = new Map()
 
     // to access democratie from each command
     ;(this.bot as any).democratie = this
@@ -100,14 +102,17 @@ class Democratie {
     if (user.partial) await user.fetch()
 
     const council = this.getCouncil(reaction.message.channel.id)
-    if (
-      !council.currentMotion ||
-      council.currentMotion.messageId !== reaction.message.id
-    ) {
+    
+    // Update Démocratie3: On ne vérifie plus "council.currentMotion".
+    // On recherche la motion spécifique correspondant au message parmi toutes les motions actives.
+    const motion = council.getActiveMotions().find(
+      (m) => m.messageId === reaction.message.id
+    )
+
+    if (!motion) {
       return
     }
 
-    const motion = council.currentMotion
     const emojiName = reaction.emoji.name!
     const voteType = REACTION_VOTE_MAP[emojiName]
     if (!voteType) return
@@ -121,6 +126,13 @@ class Democratie {
           await other.users.remove(user.id)
         }
       }
+    }
+
+    // Check if user has already voted with the same option
+    const existingVote = motion.getData().votes.find(v => v.authorId === user.id)
+    if (existingVote && existingVote.state === voteType.state) {
+      await motion.postMessage(`<@${user.id}> Vous avez déjà voté pour cette option (${voteType.name}).`)
+      return
     }
 
     // cast and refresh
@@ -158,10 +170,12 @@ class Democratie {
     if (user.bot) return
 
     const council = this.getCouncil(reaction.message.channel.id)
-    if (
-      !council.currentMotion ||
-      council.currentMotion.messageId !== reaction.message.id
-    ) {
+
+    const motion = council.getActiveMotions().find(
+      (m) => m.messageId === reaction.message.id
+    )
+
+    if (!motion) {
       return
     }
 
@@ -169,7 +183,7 @@ class Democratie {
     const voteType = REACTION_VOTE_MAP[emojiName]
     if (!voteType) return
 
-    council.currentMotion.retractVote(user.id)
+    motion.retractVote(user.id)
   }
 
   //
@@ -181,15 +195,17 @@ class Democratie {
     user: Discord.User | Discord.PartialUser
   ) {
     if (user.bot) return
-    if (!this.currentElection) return
     if (reaction.partial) await reaction.fetch()
     if (user.partial) await user.fetch()
 
-    const election = this.currentElection
-    // listen voting phase for reactions
-    if (election.data.phase !== "Voting") return
+      // find the election corresponding to the message
+    const election = Array.from(this.elections.values()).find(
+      (e) => e.data.messageId === reaction.message.id && e.data.phase === "Voting"
+    );
+    
+    if (!election) return
+
     const msg = reaction.message
-    if (msg.id !== election.data.messageId) return
 
     // ensure a user can only vote once
     for (const emoji of election.emojis) {

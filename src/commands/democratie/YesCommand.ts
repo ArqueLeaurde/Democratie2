@@ -16,6 +16,12 @@ export default class YesCommand extends VoteAliasCommand {
           prompt: 'La raison pour ce vote',
           type: 'string',
           default: ''
+        },
+        {
+          key: 'motionId',
+          prompt: "ID de la motion (optionnel)",
+          type: 'integer',
+          default: 0
         }
       ]
     })

@@ -3,21 +3,19 @@ import { CommandoClient, CommandoMessage } from 'discord.js-commando';
 import Command from '../Command';
 
 const SYNTAXES: Record<string, string> = {
-  elections: "!elections [raison] [durée candidature en minutes] [durée vote en minutes]",
-  candidat: "!candidat [raison]",
-  motion: "!motion [options] [description]",
-  yes: "!yes [raison]",
-  no: "!no [raison]",
-  abstain: "!abstain [raison]",
+  election: "!election \"raison\" <dur_cand> <dur_vote> | !election list | !election status <id> | !election kill <id>",
+  candidat: "!candidat \"raison\" [id_election]",
+  motion: "!motion <texte> | !motion list | !motion status [id] | !motion kill <id>",
+  yes: "!yes \"raison\" [id_motion]",
+  no: "!no \"raison\" [id_motion]",
+  abstain: "!abstain [raison] [id_motion]",
   pinginactive: "!pinginactive",
-  archive:"!archive [plage]/ !archive export",
-  config:"!config [point de configuration] [valeur]/$remove",
-  counclistats:"!councilstats",
-  council:"!council [nom] / !council remove",
-  setweight:"!setweight [@membre/@rôle] [poids du vote]",
-  help:"!help / !help [commande]"
-
-  // add your commands here
+  archive: "!archive [plage] | !archive export",
+  config: "!config [point] [valeur]/$remove",
+  councilstats: "!councilstats",
+  council: "!council [nom] | !council remove",
+  setweight: "!setweight [@membre/@rôle] [poids]",
+  help: "!help | !help [commande]"
 }
 
 
@@ -61,7 +59,7 @@ export default class HelpCommand extends Command {
         embed.addField('Alias', `\`${command.aliases.join('`, `')}\``);
       }
 
-	  // displays who can use the command
+      // displays who can use the command
       if (command.councilOnly) {
         embed.addField('Permission', 'Réservée au salon du conseil');
       }
@@ -69,7 +67,7 @@ export default class HelpCommand extends Command {
         embed.addField('Permission', 'Réservée aux administrateurs');
       }
 
-    // displays the command's syntax
+      // displays the command's syntax
       const syntax = SYNTAXES[command.name]
       if (syntax) {
         embed.addField("Syntaxe", `\`${syntax}\``)
@@ -80,32 +78,105 @@ export default class HelpCommand extends Command {
     // 2 - General case (!help)
     else {
       const embed = new MessageEmbed()
-        .setColor('#2ecc71') // side bar color
-        .setTitle('Panneau d\'aide de Démocratie')
-        .setThumbnail(this.client.user?.displayAvatarURL() || '') // display updated avatar on the help pannel if null or undefined --> no picture
-        .setDescription(`Voici la liste des commandes disponibles.
-        Pour plus d'informations sur une commande, tapez \`!help <nom_de_la_commande>\`.`);
-      
+        .setColor('#2ecc71')
+        .setTitle('🏛️ Panneau d\'aide de Démocratie')
+        .setThumbnail(this.client.user?.displayAvatarURL() || '')
+        .setDescription(`Voici la liste des commandes disponibles.\nPour plus d'informations sur une commande, tapez \`!help <nom_de_la_commande>\`.`);
 
-      // group commands by category
-      const sortedGroups = Array.from(this.client.registry.groups.values())
-          .sort((a, b) => a.name.localeCompare(b.name));
+      // group by command group
+      const commandGroups = this.organizeCommandsByGroup();
 
-      for (const group of sortedGroups) {
-        // ownerOnly commands arent displayed
-        const commands = group.commands
-          .filter(cmd => !cmd.ownerOnly)
-          .sort((a, b) => a.name.localeCompare(b.name))
-          .map(cmd => `**${cmd.name}**: ${cmd.description}`) // display description next to command
-          .join('\n');
+      for (const [groupName, commands] of Object.entries(commandGroups)) {
         if (commands.length > 0) {
-            embed.addField(`Groupe : ${group.name}`, commands);
+          const commandList = commands
+            .map(cmd => `**!${cmd.name}** - ${cmd.description.substring(0, 60)}${cmd.description.length > 60 ? '...' : ''}`)
+            .join('\n');
+          
+          // diviser si nécessaire pour éviter erreur trop long
+          const chunks = this.splitIntoChunks(commandList, 1000);
+          chunks.forEach((chunk, index) => {
+            const fieldName = index === 0 ? `${groupName}` : `${groupName} (suite)`;
+            embed.addField(fieldName, chunk, false);
+          });
         }
       }
 
-      embed.setFooter('Vive la Démocratie');
+      embed.setFooter('Vive la Démocratie • Tapez !help <commande> pour plus de détails');
 
       return msg.embed(embed);
     }
+  }
+
+  private organizeCommandsByGroup(): Record<string, Command[]> {
+    const groups = {
+      '🗳️ Élections': [] as Command[],
+      '📋 Motions': [] as Command[],
+      '⚙️ Configuration': [] as Command[],
+      '📊 Statistiques': [] as Command[],
+      '🔧 Autres': [] as Command[]
+    };
+
+    // Récupérer toutes les commandes du groupe democratie
+    const democratieGroup = this.client.registry.groups.get('democratie');
+    if (!democratieGroup) return groups;
+
+    // Convertir la Collection en Array et filtrer
+    const commands = Array.from(democratieGroup.commands.values())
+      .filter(cmd => !cmd.ownerOnly)
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    // Classer les commandes par groupe
+    for (const cmd of commands) {
+      const command = cmd as Command;
+      switch (command.name) {
+        case 'election':
+        case 'candidat':
+          groups['🗳️ Élections'].push(command);
+          break;
+        
+        case 'motion':
+        case 'yes':
+        case 'no':
+        case 'abstain':
+        case 'pinginactive':
+          groups['📋 Motions'].push(command);
+          break;
+        
+        case 'config':
+        case 'council':
+        case 'setweight':
+          groups['⚙️ Configuration'].push(command);
+          break;
+        
+        case 'councilstats':
+        case 'archive':
+          groups['📊 Statistiques'].push(command);
+          break;
+        
+        default:
+          groups['🔧 Autres'].push(command);
+          break;
+      }
+    }
+
+    return groups;
+  }
+
+  private splitIntoChunks(text: string, maxLength: number): string[] {
+    const lines = text.split('\n');
+    const chunks: string[] = [];
+    let currentChunk = '';
+
+    for (const line of lines) {
+      if (currentChunk.length + line.length + 1 > maxLength) {
+        if (currentChunk) chunks.push(currentChunk);
+        currentChunk = line;
+      } else {
+        currentChunk += (currentChunk ? '\n' : '') + line;
+      }
+    }
+    
+    if (currentChunk) chunks.push(currentChunk);
+    return chunks;
   }
 }
